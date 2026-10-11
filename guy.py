@@ -1,7 +1,7 @@
 import asyncio
 import os
 
-from guy.agent import main
+from guy.harness import main
 
 os.environ["PYDANTIC_AI_NO_BANNER"] = "1"
 
