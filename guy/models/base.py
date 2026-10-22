@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+
 from pydantic_ai.models import Model
 
 from ..config import config
+
 
 @dataclass
 class ModelTier:
@@ -19,7 +21,6 @@ class ModelFactory(ABC):
         self.model_name = model_name
         self._api_key = config.get_api_key(self.provider_name)
 
-    
     @property
     @abstractmethod
     def provider_name(self) -> str:
@@ -37,7 +38,7 @@ class ModelFactory(ABC):
                 f"API key for provider '{self.provider_name}' is missing. "
                 # f"Please set it using: /model {self.provider_name} set-api-key <YOUR_KEY>"
             )
-        
+
         return self._create_model()
 
     @abstractmethod

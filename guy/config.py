@@ -97,7 +97,11 @@ class ConfigManager:
 
         # Fall back to environment variables.
         if provider_name == "gemini":
-            return os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("GOOGLE_API_KEY", "").strip() or None
+            return (
+                os.getenv("GEMINI_API_KEY", "").strip()
+                or os.getenv("GOOGLE_API_KEY", "").strip()
+                or None
+            )
 
         return os.getenv(f"{provider_name.upper()}_API_KEY", "").strip() or None
 

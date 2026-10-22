@@ -1,10 +1,11 @@
 import re
 from collections.abc import Iterator
 from pathlib import Path
+
 from pydantic_ai import RunContext
 
-from .deps import Deps
 from ..ui import app_ui
+from .deps import Deps
 
 MAX_RESULTS = 200
 IGNORED_DIRS = {".git", ".guy", ".venv", "node_modules", "__pycache__"}
@@ -23,7 +24,7 @@ def _get_relative_path(ctx: RunContext[Deps], path: Path) -> str:
 def search_files(ctx: RunContext[Deps], pattern: str) -> str:
     """List files matching a glob pattern relative to the project root, e.g. 'src/**/*.py'."""
 
-    app_ui.display_message("search files with pattern: "+pattern, "Tool")
+    app_ui.display_message("search files with pattern: " + pattern, "Tool")
 
     try:
         root = ctx.deps.resolve_work_path(".")
@@ -39,13 +40,20 @@ def search_files(ctx: RunContext[Deps], pattern: str) -> str:
         return e
 
 
-def search_content(ctx: RunContext[Deps], pattern: str, ignore_case: bool = False, include: str = "**/*") -> str:
+def search_content(
+    ctx: RunContext[Deps], pattern: str, ignore_case: bool = False, include: str = "**/*"
+) -> str:
     """
     Search file contents with a regex. Returns 'path:line: text' for each match.
     Use `include` to limit files, e.g. '**/*.py'.
     Use `ignore_casew when needed.
     """
-    app_ui.display_message(f"search content with pattern: {pattern}, include: {include}"+", case ignored." if ignore_case else "", "Tool")
+    app_ui.display_message(
+        f"search content with pattern: {pattern}, include: {include}" + ", case ignored."
+        if ignore_case
+        else "",
+        "Tool",
+    )
     try:
         regex = re.compile(pattern, re.IGNORECASE if ignore_case else 0)
     except re.error as exc:
@@ -70,12 +78,16 @@ def search_content(ctx: RunContext[Deps], pattern: str, ignore_case: bool = Fals
         return e
 
 
-def list_dir(ctx: RunContext[Deps], path: str = ".", depth: int = 1, only_folders: bool = False) -> str:
+def list_dir(
+    ctx: RunContext[Deps], path: str = ".", depth: int = 1, only_folders: bool = False
+) -> str:
     """
     List files and folders under `path` (relative to project root), up to `depth` levels.
     Use `only_folders=True` to list only directories. Ignores common ignored directories.
     """
-    app_ui.display_message(f"list directory: {path}, depth: {depth}"+", only folders" if only_folders else "", "Tool")
+    app_ui.display_message(
+        f"list directory: {path}, depth: {depth}" + ", only folders" if only_folders else "", "Tool"
+    )
 
     try:
         root = ctx.deps.resolve_work_path(path)
@@ -105,7 +117,7 @@ def list_dir(ctx: RunContext[Deps], path: str = ".", depth: int = 1, only_folder
             return "\n".join(lines[:MAX_RESULTS]) + "\n[truncated; use a subfolder or lower depth]"
 
         return "\n".join(lines) or "(empty)"
-    
+
     except Exception as e:
         print(f"Error listing directory: {e}")
         return e

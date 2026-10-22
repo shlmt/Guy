@@ -1,22 +1,23 @@
-from pydantic_ai import RunContext
 import subprocess
 import tempfile
 
-from .deps import Deps
+from pydantic_ai import RunContext
+
 from ..ui import app_ui
+from .deps import Deps
 
 MAX_OUTPUT = 10_000
 TIMEOUT = 120
 
+
 def run_cmd(ctx: RunContext[Deps], command: str) -> str:
     """
-    Run a PowerShell command in the project directory. 
-    Returns the first 10,000 chars of combined stdout+stderr. 
+    Run a PowerShell command in the project directory.
+    Returns the first 10,000 chars of combined stdout+stderr.
     The full output is saved to a temp file whose path is reported when truncated, so it can be read in full later with read_file.
     """
     app_ui.display_message(f"run command: {command}", "Tool")
     try:
-
         try:
             proc = subprocess.run(
                 [

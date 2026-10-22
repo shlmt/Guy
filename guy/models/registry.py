@@ -1,5 +1,7 @@
-from typing import Dict, Type, Optional
+from typing import Dict, Optional, Type
+
 from pydantic_ai.models import Model
+
 from .base import ModelFactory
 
 
@@ -12,13 +14,11 @@ class ModelRegistry:
         self._providers: Dict[str, Type[ModelFactory]] = {}
         self.active_model_spec: str = default_model
 
-
     def register_provider(self, provider_name: str, provider_class: Type[ModelFactory]):
         """
         Registers a new model provider.
         """
         self._providers[provider_name.lower()] = provider_class
-
 
     def set_active_model(self, model_spec: str) -> None:
         """
@@ -29,17 +29,15 @@ class ModelRegistry:
             raise ValueError(f"Provider '{provider_name}' is not registered.")
         self.active_model_spec = model_spec
 
-
     def get_current_model(self) -> Model | str:
         """
         Instantiates and returns the current PydanticAI Model instance.
         """
         provider_name, model_name = self._parse_model_spec(self.active_model_spec)
         provider_cls = self._providers[provider_name]
-        
+
         provider_instance = provider_cls(model_name=model_name)
         return provider_instance.build_model()
-
 
     def _parse_model_spec(self, model_spec: str) -> tuple[str, Optional[str]]:
         """

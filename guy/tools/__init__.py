@@ -1,9 +1,7 @@
-from .registry import ToolsRegistry
-from .deps import Deps
-from .files import read_file, edit_file, write_file
+from .codebase import list_dir, search_content, search_files
+from .files import edit_file, read_file, write_file
 from .powershell import run_cmd
-from .codebase import search_files, search_content, list_dir
-
+from .registry import ToolsRegistry
 
 tools_registry = ToolsRegistry()
 
@@ -16,3 +14,6 @@ tools_registry.register(run_cmd, group="terminal", mutates=True, dangerous=True)
 tools_registry.register(search_files, group="search")
 tools_registry.register(search_content, group="search")
 tools_registry.register(list_dir, group="search")
+
+
+# in future: todo, plan, web, ask_user, delegate

@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "matcher": "edit*",
+        "windows": ".venv\\Scripts\\python.exe -m ruff format .",
+        "linux": ".venv/bin/python -m ruff format .",
+        "osx": ".venv/bin/python -m ruff format .",
+        "timeout": 30
+      }
+    ]
+  }
+}

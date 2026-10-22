@@ -1,8 +1,8 @@
-from .registry import ModelRegistry
 from ..config import config
 from .gemini import GeminiProvider
+from .registry import ModelRegistry
 
-default_model = config.default_model if config.default_model is not None else 'gemini'
+default_model = config.default_model if config.default_model is not None else "gemini"
 
 model_registry = ModelRegistry(default_model)
 

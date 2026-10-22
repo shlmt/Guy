@@ -12,27 +12,21 @@ class PlainUserInterface(UserInterface):
         else:
             print(message)
 
-
     def get_input(self, prompt: str) -> str:
         return input(f"{prompt} ")
-
 
     def display_warning(self, warning_message: str) -> None:
         print(f"WARNING: {warning_message}")
 
-
     def display_error(self, error_message: str) -> None:
         print(f"ERROR: {error_message}")
-
 
     def display_success(self, success_message: str) -> None:
         print(f"SUCCESS: {success_message}")
 
-
     def ask_permission(self, prompt: str) -> bool:
         response = input(f"{prompt} (y/n): ").strip().lower()
         return response in ("y", "yes")
-
 
     def select_option(self, prompt: str, options: List[str]) -> int:
         print(prompt)
