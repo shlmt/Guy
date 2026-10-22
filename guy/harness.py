@@ -1,11 +1,11 @@
 from pydantic_ai import ModelSettings
-from pathlib import Path
 
-from .models import model_registry
-from .ui import app_ui
-from .tools import tools_registry, Deps
-from .agent import build_agent
 from .paths import WORK_DIR
+from .models import model_registry
+from .session import SessionStore
+from .ui import app_ui
+from .agent import build_agent
+from .tools import tools_registry, Deps
 
 
 async def main():
@@ -13,6 +13,9 @@ async def main():
 
     tools = tools_registry.select()
     agent = build_agent(tools)
+
+    session_store = SessionStore()
+    session_id = session_store.new_id()
     session_history = None
 
     while True:
@@ -28,10 +31,15 @@ async def main():
                 model=current_model,
                 message_history=session_history,
                 deps=work_deps,
-                model_settings=ModelSettings(temperature=0.2)
+                model_settings=ModelSettings(temperature=0.2),
             )
-            app_ui.display_message(result.output, sender="Guy") 
+            app_ui.display_message(result.output, sender="Guy")
+
+            session_store.append(session_id, result.new_messages())
+            if not session_history:
+                session_store.set_title(session_id, user_input[:50])
+
             session_history = result.all_messages()
-        
+
         except Exception as err:
             app_ui.display_error(err)

@@ -2,6 +2,7 @@ from .codebase import list_dir, search_content, search_files
 from .files import edit_file, read_file, write_file
 from .powershell import run_cmd
 from .registry import ToolsRegistry
+from .deps import Deps
 
 tools_registry = ToolsRegistry()
 
