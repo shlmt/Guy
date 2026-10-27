@@ -1,10 +1,13 @@
-from pydantic_ai import Agent, ModelSettings
+from collections.abc import Sequence
+
+from pydantic_ai import Agent, ModelSettings, UserContent
 
 from .commands import CommandContext, CommandRegistry
 from .models import model_registry
 from .session import SessionStore
 from .tools import Deps
 from .ui import UserInterface
+from .attachments import build_prompt
 
 
 class Harness:
@@ -45,9 +48,10 @@ class Harness:
                 continue
             if await self.commands.dispatch(user_input, self.ctx):
                 continue
-            await self._run_turn(user_input)
+            prompt, _ = build_prompt(user_input, self.deps.work_dir)
+            await self._run_turn(prompt)
 
-    async def _run_turn(self, user_input: str) -> None:
+    async def _run_turn(self, user_input: str | Sequence[UserContent]) -> None:
         try:
             result = await self.agent.run(
                 user_input,
@@ -60,9 +64,10 @@ class Harness:
 
             self.session_store.append(self.session_id, result.new_messages())
             if not self.session_history:
-                self.session_store.set_title(self.session_id, user_input[:50])
+                title_input = str(user_input[0]) if not isinstance(user_input, str) else user_input
+                self.session_store.set_title(self.session_id, title_input[:50])
 
             self.session_history = result.all_messages()
 
         except Exception as err:
-            self.ui.display_error(err)
+            self.ui.display_error(str(err))
