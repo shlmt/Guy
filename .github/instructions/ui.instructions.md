@@ -1,5 +1,5 @@
 ---
-description: "Rich UI implementation rules and guidelines for the project."
+description: "Rich terminal UI implementation rules and guidelines for the project."
 applyTo: "**/ui/rich.py"
 ---
 
