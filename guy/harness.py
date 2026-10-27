@@ -24,6 +24,7 @@ class Harness:
         self.session_store = session_store
         self.commands = commands
         self.ctx = CommandContext(self, ui)
+        self._running = True
         self.new_session()
 
     def new_session(self) -> None:
@@ -34,8 +35,11 @@ class Harness:
         self.session_history = self.session_store.load(session_id)
         self.session_id = session_id
 
+    def stop(self) -> None:
+        self._running = False
+
     async def run(self) -> None:
-        while True:
+        while self._running:
             user_input = (await self.ui.get_input("User")).strip()
             if not user_input:
                 continue

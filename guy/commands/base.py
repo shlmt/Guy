@@ -20,6 +20,8 @@ class CommandHarness(Protocol):
 
     def resume_session(self, session_id: str) -> None: ...
 
+    def stop(self) -> None: ...
+
 
 @dataclass(frozen=True, slots=True)
 class CommandContext:
