@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import os
 
@@ -9,10 +10,21 @@ from guy.harness import Harness
 from guy.paths import WORK_DIR
 from guy.session import SessionStore
 from guy.tools import Deps, tools_registry
-from guy.ui import app_ui
+from guy.ui import get_app_ui
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--plain", dest="ui", action="store_const", const="plain")
+    group.add_argument("--rich", dest="ui", action="store_const", const="rich")
+    parser.set_defaults(ui="plain")
+    return parser.parse_args()
 
 
 def main() -> None:
+    args = parse_args()
+    app_ui = get_app_ui(plain=args.ui == "plain")
     harness = Harness(
         app_ui,
         build_agent(tools_registry.select()),

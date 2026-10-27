@@ -48,11 +48,9 @@ def search_content(
     Use `include` to limit files, e.g. '**/*.py'.
     Use `ignore_casew when needed.
     """
+    suffix = ", case ignored." if ignore_case else ""
     app_ui.display_message(
-        f"search content with pattern: {pattern}, include: {include}" + ", case ignored."
-        if ignore_case
-        else "",
-        "Tool",
+        f"search content with pattern: {pattern}, include: {include}{suffix}", "Tool"
     )
     try:
         regex = re.compile(pattern, re.IGNORECASE if ignore_case else 0)
@@ -85,9 +83,8 @@ def list_dir(
     List files and folders under `path` (relative to project root), up to `depth` levels.
     Use `only_folders=True` to list only directories. Ignores common ignored directories.
     """
-    app_ui.display_message(
-        f"list directory: {path}, depth: {depth}" + ", only folders" if only_folders else "", "Tool"
-    )
+    suffix = ", only folders" if only_folders else ""
+    app_ui.display_message(f"list directory: {path}, depth: {depth}{suffix}", "Tool")
 
     try:
         root = ctx.deps.resolve_work_path(path)

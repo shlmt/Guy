@@ -1,3 +1,9 @@
+from .base import UserInterface
 from .plain import PlainUserInterface
+from .rich import RichUserInterface
 
-app_ui = PlainUserInterface()
+
+def get_app_ui(plain: bool = True) -> UserInterface:
+    if plain:
+        return PlainUserInterface()
+    return RichUserInterface()

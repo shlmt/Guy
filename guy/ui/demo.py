@@ -76,8 +76,9 @@ async def main() -> None:
         await ui.show_tool_output()
 
         type_later("2")
-        choice = await ui.select_option("Apply the fix?", ["Apply and run tests", "Show diff"])
-        ui.display_message(f"selected index {choice}")
+        options = ["Apply and run tests", "Show diff"]
+        choice = await ui.select_option("Apply the fix?", options)
+        ui.display_message(f"selected index {options.index(choice)}")
 
         type_later("n")
         await ui.ask_permission("Delete build/ directory?", danger=True)

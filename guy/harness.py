@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 
 from pydantic_ai import Agent, ModelSettings, UserContent
+from pydantic_ai.result import StreamedRunResult
 
 from .commands import CommandContext, CommandRegistry
 from .models import model_registry
@@ -53,14 +54,14 @@ class Harness:
 
     async def _run_turn(self, user_input: str | Sequence[UserContent]) -> None:
         try:
-            result = await self.agent.run(
+            async with self.agent.run_stream(
                 user_input,
                 model=model_registry.get_current_model(),
                 message_history=self.session_history,
                 deps=self.deps,
                 model_settings=ModelSettings(temperature=0.2),
-            )
-            self.ui.display_message(result.output, sender="Guy")
+            ) as result:
+                await self._stream_output(result)
 
             self.session_store.append(self.session_id, result.new_messages())
             if not self.session_history:
@@ -71,3 +72,16 @@ class Harness:
 
         except Exception as err:
             self.ui.display_error(str(err))
+
+    async def _stream_output(self, result: StreamedRunResult) -> None:
+        deltas = result.stream_text(delta=True)
+        # Thinking covers the wait until the first chunk arrives.
+        with self.ui.thinking():
+            first = await anext(deltas, "")
+        response = self.ui.begin_response()
+        try:
+            response.append(first)
+            async for delta in deltas:
+                response.append(delta)
+        finally:
+            response.finish()

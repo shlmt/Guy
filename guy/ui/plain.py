@@ -18,6 +18,7 @@ MAGENTA = "\033[95m"
 class PlainResponseStream(ResponseStream):
     def __init__(self) -> None:
         self._open = True
+        print(f"{CYAN}{BOLD}Guy:{RESET} ", end="", flush=True)
 
     def append(self, delta: str) -> None:
         if self._open:

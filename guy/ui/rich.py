@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import asyncio
-import math
 import time
 from collections.abc import Sequence
 from contextlib import contextmanager
@@ -10,7 +8,7 @@ from typing import Any
 from uuid import uuid4
 
 from prompt_toolkit import PromptSession
-from prompt_toolkit.application import Application
+from prompt_toolkit.application import Application, in_terminal
 from prompt_toolkit.completion import Completer, Completion, DynamicCompleter
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import FormattedTextControl, HSplit, Layout, Window
@@ -25,6 +23,7 @@ from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.panel import Panel
 from rich.style import Style
+from rich.table import Table
 from rich.text import Text
 from rich.theme import Theme
 
@@ -42,6 +41,7 @@ THEME = Theme(
         "user": "bold #a77bff",
         "text": "#e6f4f2",
         "muted": "#6b8a94",
+        "tool.msg": "#b8c4c8",
         "ok": "#3ddc97",
         "fail": "#ff5c7a",
         "warn": "#ffc857",
@@ -126,10 +126,6 @@ def _shimmer(text: str, t: float) -> Text:
     return Text.assemble(
         *((ch, _mix(low, high, max(0.0, 1 - abs(i - center) / 4))) for i, ch in enumerate(text))
     )
-
-
-def _pulse(t: float) -> Style:
-    return _mix(_rgb("wave.low"), _rgb("wave.high"), (math.sin(t * 5) + 1) / 2)
 
 
 def _pt_style(name: str) -> str:
@@ -253,21 +249,31 @@ class _Response(ResponseStream):
         if not self._open:
             return
         self._open = False
-        final = Group(self._header("assistant"), self._body()) if self._text.strip() else None
-        self._region.remove(self, final)
+        self._region.remove(self, self._view() if self._text.strip() else None)
 
-    def _header(self, style: str | Style) -> Text:
-        return Text(f"{self._sym.assistant} {NAME}", style=style)
-
-    def _body(self) -> RenderableType:
-        return Padding(Markdown(self._text), (0, 0, 0, 2))
+    def _view(self) -> RenderableType:
+        grid = Table.grid(padding=(0, 1), expand=True)
+        grid.add_column(no_wrap=True)
+        grid.add_column(ratio=1)
+        grid.add_row(Text(f"{NAME} {self._sym.prompt}", style="assistant"), Markdown(self._text))
+        return grid
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
-        yield self._header(_pulse(time.monotonic()))
         # Only the tail fits the live area; the full text is printed on finish.
-        lines = console.render_lines(self._body(), options, pad=False, new_lines=True)
+        lines = console.render_lines(self._view(), options, pad=False, new_lines=True)
         for line in lines[-max(console.height - 4, 4) :]:
             yield from line
+
+
+class _ToolLog:
+    """Tool messages of one turn: a live tail, collapsed once the answer starts."""
+
+    def __init__(self) -> None:
+        self.lines: list[str] = []
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        text = "\n".join(self.lines[-TAIL_LINES:])
+        yield Text(text, style="tool.msg", no_wrap=True, overflow="ellipsis")
 
 
 class _Tool(ToolRun):
@@ -351,6 +357,7 @@ class RichUserInterface(UserInterface):
         self._region = _LiveRegion(self._console)
         self._outputs: dict[str, tuple[str, str]] = {}
         self._status: dict[str, str] = {}
+        self._tool_log: _ToolLog | None = None
         self._completer: Completer | None = None
         self._session = self._create_session()
         if show_banner and self._console.is_terminal:
@@ -362,6 +369,14 @@ class RichUserInterface(UserInterface):
         @keys.add("escape", "enter")
         def _newline(event) -> None:
             event.current_buffer.insert_text("\n")
+
+        @keys.add("c-o")
+        def _expand(event) -> None:
+            async def view() -> None:
+                async with in_terminal():
+                    await self.show_tool_output()
+
+            event.app.create_background_task(view())
 
         return PromptSession(
             completer=DynamicCompleter(lambda: self._completer),
@@ -383,6 +398,7 @@ class RichUserInterface(UserInterface):
         if prompt:
             message.append(("class:prompt.label", f"{prompt} "))
         message.append(("class:prompt.mark", f"{self._sym.prompt} "))
+        self._collapse_tool_log()
         with patch_stdout(raw=True):
             return await self._session.prompt_async(message)
 
@@ -410,7 +426,12 @@ class RichUserInterface(UserInterface):
 
     # --- output ---
     def display_message(self, message: str, sender: str | None = None) -> None:
-        if sender:
+        if sender == "Tool":
+            if self._tool_log is None:
+                self._tool_log = _ToolLog()
+                self._region.add(self._tool_log)
+            self._tool_log.lines.append(f"{self._sym.info} {sender}: {message}")
+        elif sender:
             self._console.print(
                 Text.assemble(
                     (f"{self._sym.info} {sender}: ", "user"),
@@ -421,6 +442,7 @@ class RichUserInterface(UserInterface):
             self._console.print(Text(f"{self._sym.info} {message}", style="muted"))
 
     def begin_response(self) -> ResponseStream:
+        self._collapse_tool_log()
         return _Response(self._region, self._sym)
 
     def begin_tool(self, name: str, args: dict[str, Any]) -> ToolRun:
@@ -491,12 +513,25 @@ class RichUserInterface(UserInterface):
             pass
 
     # --- helpers ---
+    def _collapse_tool_log(self) -> None:
+        log, self._tool_log = self._tool_log, None
+        if log is None:
+            return
+        key = uuid4().hex[:4]
+        self._outputs[key] = (f"tool calls  #{key}", "\n".join(log.lines))
+        summary = Text.assemble(
+            (f"{self._sym.info} {len(log.lines)} tool calls", "tool.msg"),
+            (f"  #{key}", "muted"),
+            ("  ctrl+o expand", "muted"),
+        )
+        self._region.remove(log, summary)
+
     def _print_banner(self) -> None:
         self._console.print()
         for row in self._sym.logo:
             self._console.print(Padding(_gradient(row), (0, 0, 0, 2)))
         sep = f" {self._sym.sep} "
-        tagline = sep.join(["AI coding assistant", "ctrl+d exit", "alt+enter new line"])
+        tagline = sep.join(["AI coding assistant", "developed with ❤️ by shlmt"])
         self._console.print(Padding(Text(tagline, style="muted"), (1, 0, 0, 2)))
         self._console.print()
 
