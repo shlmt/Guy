@@ -1,45 +1,64 @@
-from pydantic_ai import ModelSettings
+from pydantic_ai import Agent, ModelSettings
 
-from .paths import WORK_DIR
+from .commands import CommandContext, CommandRegistry
 from .models import model_registry
 from .session import SessionStore
-from .ui import app_ui
-from .agent import build_agent
-from .tools import tools_registry, Deps
+from .tools import Deps
+from .ui import UserInterface
 
 
-async def main():
-    work_deps = Deps(WORK_DIR)
+class Harness:
+    """The conversation loop. Everything else is injected."""
 
-    tools = tools_registry.select()
-    agent = build_agent(tools)
+    def __init__(
+        self,
+        ui: UserInterface,
+        agent: Agent[Deps, str],
+        deps: Deps,
+        session_store: SessionStore,
+        commands: CommandRegistry,
+    ) -> None:
+        self.ui = ui
+        self.agent = agent
+        self.deps = deps
+        self.session_store = session_store
+        self.commands = commands
+        self.ctx = CommandContext(self, ui)
+        self.new_session()
 
-    session_store = SessionStore()
-    session_id = session_store.new_id()
-    session_history = None
+    def new_session(self) -> None:
+        self.session_id = self.session_store.new_id()
+        self.session_history = None
 
-    while True:
-        user_input = app_ui.get_input("\nUser > ").strip()
-        if not user_input:
-            continue
+    def resume_session(self, session_id: str) -> None:
+        self.session_history = self.session_store.load(session_id)
+        self.session_id = session_id
 
-        current_model = model_registry.get_current_model()
+    async def run(self) -> None:
+        while True:
+            user_input = (await self.ui.get_input("User")).strip()
+            if not user_input:
+                continue
+            if await self.commands.dispatch(user_input, self.ctx):
+                continue
+            await self._run_turn(user_input)
 
+    async def _run_turn(self, user_input: str) -> None:
         try:
-            result = await agent.run(
+            result = await self.agent.run(
                 user_input,
-                model=current_model,
-                message_history=session_history,
-                deps=work_deps,
+                model=model_registry.get_current_model(),
+                message_history=self.session_history,
+                deps=self.deps,
                 model_settings=ModelSettings(temperature=0.2),
             )
-            app_ui.display_message(result.output, sender="Guy")
+            self.ui.display_message(result.output, sender="Guy")
 
-            session_store.append(session_id, result.new_messages())
-            if not session_history:
-                session_store.set_title(session_id, user_input[:50])
+            self.session_store.append(self.session_id, result.new_messages())
+            if not self.session_history:
+                self.session_store.set_title(self.session_id, user_input[:50])
 
-            session_history = result.all_messages()
+            self.session_history = result.all_messages()
 
         except Exception as err:
-            app_ui.display_error(err)
+            self.ui.display_error(err)

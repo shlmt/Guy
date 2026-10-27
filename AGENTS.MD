@@ -11,9 +11,10 @@ Minimal, extensible coding agent. Python 3.13, PydanticAI.
 
 ## Layout
 use `showTree.ps1` to discover current files structure
-- `guy.py` entry, composition root only
+- `guy.py` entry, composition root only (wires ui, agent, deps, store, command_registry into Harness)
 - `agent.py` builds Agent from given tool list
-- `harness.py` conversation loop, history. Sub-agents run inside it
+- `harness.py` conversation loop, history. Sub-agents run inside it. Deps injected by guy.py
+- `commands/` Command/Registry/parser + `command_registry` instance; each domain registers via `<domain>_commands.py` (e.g. `session_commands.py`) imported in `commands/__init__.py`
 - `models/` ModelFactory ABC + registry, one file per provider
 - `tools/` ToolsRegistry + one file per group
 - `sessions.py` JSONL persistence

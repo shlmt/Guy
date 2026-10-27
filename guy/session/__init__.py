@@ -24,7 +24,7 @@ from pydantic_ai.messages import (
     UserPromptPart,
 )
 
-from .paths import SESSION_DIR
+from ..paths import SESSION_DIR
 
 DEFAULT_TITLE = "New session"
 
