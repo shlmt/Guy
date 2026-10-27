@@ -22,6 +22,10 @@ class GeminiProvider(ModelFactory):
     def provider_name(self) -> str:
         return "gemini"
 
+    @classmethod
+    def supported_models(cls) -> list[str]:
+        return list(cls.MODELS.keys())
+
     def _create_model(self) -> GoogleModel:
         tier_info = self.MODELS.get(self.model_name)
 

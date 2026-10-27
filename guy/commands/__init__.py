@@ -16,6 +16,7 @@ command_registry = CommandRegistry()
 # Registered here, like tools_registry. Importing a domain's COMMANDS is the registration.
 from .app_commands import COMMANDS as APP_COMMANDS
 from ..session.commands import COMMANDS as SESSION_COMMANDS
+from ..models.commands import COMMANDS as MODEL_COMMANDS
 
-for _command in (*APP_COMMANDS, *SESSION_COMMANDS):
+for _command in (*APP_COMMANDS, *SESSION_COMMANDS, *MODEL_COMMANDS):
     command_registry.register(_command)

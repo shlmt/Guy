@@ -1,4 +1,5 @@
 from ..config import config
+from .base import ModelFactory, ModelTier
 from .gemini import GeminiProvider
 from .registry import ModelRegistry
 

@@ -17,7 +17,7 @@ class ModelFactory(ABC):
     Abstract Base Class for all model providers.
     """
 
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str | None = None):
         self.model_name = model_name
         self._api_key = config.get_api_key(self.provider_name)
 
@@ -28,6 +28,11 @@ class ModelFactory(ABC):
         Unique string identifier for the provider (e.g., 'openai', 'anthropic').
         """
         pass
+
+    @classmethod
+    def supported_models(cls) -> list[str]:
+        """Returns the list of known/supported model tier names."""
+        return []
 
     def build_model(self) -> Model | str:
         """

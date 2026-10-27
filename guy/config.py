@@ -113,6 +113,14 @@ class ConfigManager:
         self._config.api_keys[provider_name] = api_key.strip()
         self.save()
 
+    def remove_api_key(self, provider: str) -> bool:
+        provider_name = self._normalize_provider(provider)
+        if provider_name in self._config.api_keys:
+            del self._config.api_keys[provider_name]
+            self.save()
+            return True
+        return False
+
 
 # Import this object through one consistent package path throughout the application.
 config = ConfigManager()

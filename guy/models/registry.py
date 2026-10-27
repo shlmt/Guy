@@ -20,6 +20,25 @@ class ModelRegistry:
         """
         self._providers[provider_name.lower()] = provider_class
 
+    def get_providers(self) -> list[str]:
+        """Returns the registered provider names."""
+        return sorted(self._providers.keys())
+
+    def get_provider_cls(self, provider_name: str) -> Optional[Type[ModelFactory]]:
+        """Returns provider class if registered."""
+        return self._providers.get(provider_name.lower())
+
+    def list_available_models(self) -> list[str]:
+        """Returns full specs of available models across all providers (e.g. 'gemini:flash')."""
+        models: list[str] = []
+        for name, cls in self._providers.items():
+            supported = cls.supported_models()
+            if supported:
+                models.extend(f"{name}:{m}" for m in supported)
+            else:
+                models.append(name)
+        return sorted(models)
+
     def set_active_model(self, model_spec: str) -> None:
         """
         Updates the active model specification (e.g., 'openai:gpt-4o-mini').
